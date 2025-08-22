@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Typing Names Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #a1c4fd, #c2e9fb);
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    #gameBox {
+      background: #fff;
+      padding: 30px;
+      margin: 20px auto;
+      border-radius: 15px;
+      max-width: 500px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    #wordDisplay {
+      font-size: 2em;
+      margin: 20px 0;
+      color: #0077b6;
+    }
+    #inputBox, #nameInput {
+      padding: 10px;
+      font-size: 1.2em;
+      width: 80%;
+      border-radius: 8px;
+      border: 2px solid #0077b6;
+      margin-top: 10px;
+    }
+    #score, #timer {
+      font-size: 1.2em;
+      margin: 10px;
+      font-weight: bold;
+    }
+    #message {
+      margin-top: 15px;
+      font-size: 1.2em;
+      color: green;
+      height: 24px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1em;
+      border: none;
+      border-radius: 8px;
+      background: #00b4d8;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0096c7;
+    }
+    #leaderboard {
+      margin-top: 20px;
+      text-align: left;
+    }
+    #leaderboard h2 {
+      font-size: 1.4em;
+      color: #333;
+    }
+    #leaderboard ol {
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Typing Names Game</h1>
+  <div id="gameBox">
+    <input type="text" id="nameInput" placeholder="Enter your name" />
+    <div id="score">Score: 0</div>
+    <div id="timer">Time: 30</div>
+    <div id="wordDisplay">Press Start</div>
+    <input type="text" id="inputBox" placeholder="Type here..." disabled />
+    <div id="message"></div>
+    <button onclick="startGame()">Start Game</button>
+    <div id="leaderboard">
+      <h2>Leaderboard</h2>
+      <ol id="leaderboardList"></ol>
+    </div>
+  </div>
+
+  <script>
+    const words = [
+      "Cooper","Keagan","Asher","Lindsay","Luca","Enzo","Tynai",
+      "Ella","Alex","Carson","Michaela","Amelia","Jackson","Stella",
+      "Jack","Avery","John","Hadley","Connor","Grayson","Marvin"
+    ];
+
+    let score = 0;
+    let time = 30;
+    let currentWord = "";
+    let timerInterval;
+    let leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
+
+    const wordDisplay = document.getElementById("wordDisplay");
+    const inputBox = document.getElementById("inputBox");
+    const scoreDisplay = document.getElementById("score");
+    const timerDisplay = document.getElementById("timer");
+    const message = document.getElementById("message");
+    const leaderboardList = document.getElementById("leaderboardList");
+    const nameInput = document.getElementById("nameInput");
+
+    function randomWord() {
+      return words[Math.floor(Math.random() * words.length)];
+    }
+
+    function startGame() {
+      if (!nameInput.value.trim()) {
+        alert("Please enter your name before starting.");
+        return;
+      }
+      score = 0;
+      time = 30;
+      scoreDisplay.textContent = "Score: " + score;
+      timerDisplay.textContent = "Time: " + time;
+      inputBox.disabled = false;
+      inputBox.value = "";
+      inputBox.focus();
+      message.textContent = "";
+      nextWord();
+
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        time--;
+        timerDisplay.textContent = "Time: " + time;
+        if (time <= 0) {
+          clearInterval(timerInterval);
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function nextWord() {
+      currentWord = randomWord();
+      wordDisplay.textContent = currentWord;
+      inputBox.value = "";
+    }
+
+    inputBox.addEventListener("input", () => {
+      if (inputBox.value === currentWord) {
+        score++;
+        scoreDisplay.textContent = "Score: " + score;
+        message.textContent = "Great job!";
+        setTimeout(() => { message.textContent = ""; }, 800);
+        nextWord();
+      }
+    });
+
+    function endGame() {
+      wordDisplay.textContent = "Game Over!";
+      inputBox.disabled = true;
+      message.textContent = "Final Score: " + score;
+
+      // Save score with name to leaderboard, replacing old entry if exists
+      const playerName = nameInput.value.trim();
+      const existingIndex = leaderboard.findIndex(entry => entry.name.toLowerCase() === playerName.toLowerCase());
+      if (existingIndex !== -1) {
+        if (score > leaderboard[existingIndex].score) {
+          leaderboard[existingIndex].score = score; // update only if higher
+        }
+      } else {
+        leaderboard.push({ name: playerName, score: score });
+      }
+
+      leaderboard.sort((a,b) => b.score - a.score);
+      leaderboard = leaderboard.slice(0, 5); // top 5 unique scores
+      localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+      renderLeaderboard();
+    }
+
+    function renderLeaderboard() {
+      leaderboardList.innerHTML = "";
+      leaderboard.forEach((entry, i) => {
+        const li = document.createElement("li");
+        li.textContent = `#${i+1}: ${entry.name} - ${entry.score}`;
+        leaderboardList.appendChild(li);
+      });
+    }
+
+    // Render leaderboard on load
+    renderLeaderboard();
+  </script>
+</body>
+</html>
